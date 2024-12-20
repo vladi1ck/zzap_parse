@@ -32,8 +32,15 @@ services:
       - "8888:8888"
     restart: always
     command: >
-      bash -c "python manage.py collectstatic --noinput && python manage.py makemigrations 
-      && python manage.py migrate &&  python manage.py runserver 0.0.0.0:8888"
+      bash -c "
+      python manage.py collectstatic --noinput &&
+      python manage.py makemigrations &&
+      python manage.py showmigrations | grep '\[ \]' && 
+      python manage.py migrate || 
+      echo 'No migrations to apply.' && 
+      python manage.py runserver 0.0.0.0:8888
+      "
+
     logging:
       driver: "json-file"
       options:

@@ -9,22 +9,24 @@ from zzap_car.utils import fetch_car_brands
 from django.urls import path
 from django.core.serializers import serialize
 
+from zzap_core.models import Search
+
 
 @admin.register(BrandCar)
 class BrandCarAdmin(admin.ModelAdmin):
     list_display = ('brand_car', 'brand_id', )
     actions = ['search_by_brands']
 
-    # Определим действия, которые можно выполнить
     def search_by_brands(self, request, queryset=None):
         """Метод для обновления данных о брендах автомобилей."""
+        search = Search.objects.all()
         if queryset is None or len(queryset)>1:
             self.message_user(request, f"Ошибка: Выберите 1 марку", messages.ERROR)
             return
         try:
             brand_data = list(queryset.values('brand_id', 'brand_car'))
             search_part_numbers_process.delay(json.dumps(brand_data, cls=DjangoJSONEncoder))
-            self.message_user(request, "Успешный поиск перейдите в результаты поиска", messages.SUCCESS)
+            self.message_user(request, f"Процесс начался, примерное время ожидания - {len(search) * 30} секунд", messages.SUCCESS)
         except Exception as e:
             self.message_user(request, f"Ошибка: {e}", messages.ERROR)
 
@@ -35,7 +37,7 @@ class BrandCarAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         """Добавить кнопку в object-tools-items."""
         extra_context = extra_context or {}
-        extra_context['show_custom_button'] = True  # Устанавливаем флаг для кнопки
+        extra_context['show_custom_button'] = True
         return super().changelist_view(request, extra_context=extra_context)
 
     def get_urls(self):
@@ -48,7 +50,7 @@ class BrandCarAdmin(admin.ModelAdmin):
     def fetch_brands_view(self, request):
         """Обработчик кнопки для обновления брендов автомобилей."""
         try:
-            fetch_car_brands()  # Ваш код для получения данных о брендах
+            fetch_car_brands()
             self.message_user(request, "Данные о брендах автомобилей успешно обновлены.", messages.SUCCESS)
         except Exception as e:
             self.message_user(request, f"Ошибка: {e}", messages.ERROR)

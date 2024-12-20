@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 import dotenv
 import requests
 from zzap_car.models import BrandCar
-from zzap_core.models import SearchResults, Search
+from zzap_core.models import PartNumbersSearchResults, Search
 
 dotenv.load_dotenv()
 
@@ -14,6 +14,7 @@ API_KEY = os.getenv('api_key')
 MAIN_URL = os.getenv('MAIN_URL')
 GET_BRANDS = os.getenv('GET_BRANDS')
 GET_SUGGEST = os.getenv('GET_SUGGEST')
+GET_RESULTS = os.getenv('GET_SUGGEST')
 
 payload = {
     'login': '',
@@ -49,6 +50,7 @@ def fetch_part_numbers_by_brands(brand_id, brand_name):
     """Отправка запроса и сохранение артикулов запчастей автомобилей"""
     url = f'{MAIN_URL}/{GET_SUGGEST}'
     search_data = Search.objects.all()
+    count = 0
     try:
         for search in search_data:
             print(search.search_string)
@@ -59,16 +61,16 @@ def fetch_part_numbers_by_brands(brand_id, brand_name):
             response = requests.post(url, payload)
             if response.status_code == 200:
                 part_numbers_json = from_xml_to_json(response.text)
-                print(part_numbers_json)
+                print(part_numbers_json['row_count'])
 
                 for part_number in part_numbers_json['table']:
-                    if not SearchResults.objects.filter(
+                    if not PartNumbersSearchResults.objects.filter(
                             brand_id=BrandCar.objects.get(brand_id=part_number['code_man']),
                             search_id=Search.objects.get(id=search.id),
                             part_number=part_number['partnumber'],
                             class_cat=part_number['class_cat'],
                     ).exists():
-                        SearchResults.objects.get_or_create(
+                        PartNumbersSearchResults.objects.get_or_create(
                             brand_id=BrandCar.objects.get(brand_id=part_number['code_man']),
                             part_number=part_number['partnumber'],
                             defaults={
@@ -76,8 +78,11 @@ def fetch_part_numbers_by_brands(brand_id, brand_name):
                                 'class_cat': part_number['class_cat'],  # Установится только если создаётся новая запись
                             }
                         )
+
+                        count +=1
                     else:
                         continue
+                print(count)
             else:
                 raise Exception(f"Ошибка запроса: {response.status_code}")
             time.sleep(30)
@@ -85,23 +90,24 @@ def fetch_part_numbers_by_brands(brand_id, brand_name):
         logging.debug(_ex)
 
 
-def fetch_parts_by_part_numbers(brand_name):
+def fetch_parts_count_by_part_numbers(brand_name, part_number):
     """Отправка запроса и сохранение артикулов запчастей автомобилей"""
     url = f'{MAIN_URL}/{GET_SUGGEST}'
     search_data = Search.objects.all()
     try:
         for search in search_data:
-            payload['search_text'] = f'{search.search_string} {brand_name}'
+            # payload['search_text'] = f'{search.search_string} {brand_name}'
             payload['row_count'] = 1000
             payload['type_request'] = 4
             payload['class_man'] = brand_name
+            payload['partnumber'] = part_number
             response = requests.post(url, payload)
             if response.status_code == 200:
                 part_numbers_json = from_xml_to_json(response.text)
 
                 for part_number in part_numbers_json['table']:
 
-                    SearchResults.objects.create(
+                    PartNumbersSearchResults.objects.create(
                         brand_id=BrandCar.objects.get(brand_id=part_number['code_man']),
                         search_id=Search.objects.get(id=search.id),
                         part_number=part_number['partnumber'],
