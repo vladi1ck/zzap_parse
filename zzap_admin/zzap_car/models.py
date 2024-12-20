@@ -3,7 +3,7 @@ from django.db import models
 
 class BrandCar(models.Model):
     brand_car = models.CharField(max_length=255, null=False, blank=False)
-    brand_id = models.CharField(max_length=255, null=False, blank=False)
+    brand_id = models.CharField(max_length=255, null=False, blank=False, unique=True)
 
     class Meta:
         verbose_name = 'Бренд'

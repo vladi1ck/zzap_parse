@@ -1,25 +1,36 @@
-from django.contrib import admin, messages
-from django.shortcuts import redirect
+import json
 
+from django.contrib import admin, messages
+from django.core.serializers.json import DjangoJSONEncoder
+from django.shortcuts import redirect
+from zzap_car.tasks import search_part_numbers_process
 from zzap_car.models import BrandCar, ModelCar, Car
 from zzap_car.utils import fetch_car_brands
 from django.urls import path
+from django.core.serializers import serialize
 
 
 @admin.register(BrandCar)
 class BrandCarAdmin(admin.ModelAdmin):
     list_display = ('brand_car', 'brand_id', )
+    actions = ['search_by_brands']
 
     # Определим действия, которые можно выполнить
-    def fetch_brands(self, request, queryset=None):
+    def search_by_brands(self, request, queryset=None):
         """Метод для обновления данных о брендах автомобилей."""
+        if queryset is None or len(queryset)>1:
+            self.message_user(request, f"Ошибка: Выберите 1 марку", messages.ERROR)
+            return
         try:
-            fetch_car_brands()  # Например, ваш метод для обновления данных
-            self.message_user(request, "Данные о брендах автомобилей успешно обновлены.", messages.SUCCESS)
+            brand_data = list(queryset.values('brand_id', 'brand_car'))
+            search_part_numbers_process.delay(json.dumps(brand_data, cls=DjangoJSONEncoder))
+            self.message_user(request, "Успешный поиск перейдите в результаты поиска", messages.SUCCESS)
         except Exception as e:
             self.message_user(request, f"Ошибка: {e}", messages.ERROR)
 
-    fetch_brands.short_description = "Обновить данные о брендах автомобилей"
+    search_by_brands.short_description = "Искать по выбранной марке"
+
+
 
     def changelist_view(self, request, extra_context=None):
         """Добавить кнопку в object-tools-items."""

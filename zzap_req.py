@@ -35,9 +35,9 @@ payload = {
 code_doc_b = 497632882570027184
 part_number = "17117652234"
 code_region = "1"
-class_man = "Citroen"
+class_man = "BMW"
 api_key = os.getenv('api_key', None)
-search_text = 'система охлаждения Citroen'
+search_text = 'Фара BMW'
 # search_text = ''
 payload['api_key'] = api_key
 payload['search_text'] = search_text
@@ -47,7 +47,7 @@ payload['class_man'] = class_man
 payload['code_doc_b'] = code_doc_b
 
 url = "https://api.zzap.pro/webservice/datasharing.asmx/GetSearchSuggestV3"
-url_search_light = "https://api.zzap.pro/webservice/datasharing.asmx/GetSearchResultLight"
+url_search_light = "https://api.zzap.pro/webservice/datasharing.asmx/GetSearchResultV3"
 url_search_one = "https://api.zzap.pro/webservice/datasharing.asmx/GetSearchResultOne"
 
 
