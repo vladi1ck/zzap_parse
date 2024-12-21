@@ -9,7 +9,7 @@ from zzap_car.utils import fetch_car_brands
 from django.urls import path
 from django.core.serializers import serialize
 
-from zzap_core.models import Search
+from zzap_core.models import Search, PartNumbersSearchResults
 
 
 @admin.register(BrandCar)
@@ -20,13 +20,14 @@ class BrandCarAdmin(admin.ModelAdmin):
     def search_by_brands(self, request, queryset=None):
         """Метод для обновления данных о брендах автомобилей."""
         search = Search.objects.all()
+        search_part_numbers = PartNumbersSearchResults.objects.all()
         if queryset is None or len(queryset)>1:
             self.message_user(request, f"Ошибка: Выберите 1 марку", messages.ERROR)
             return
         try:
             brand_data = list(queryset.values('brand_id', 'brand_car'))
             search_part_numbers_process.delay(json.dumps(brand_data, cls=DjangoJSONEncoder))
-            self.message_user(request, f"Процесс начался, примерное время ожидания - {len(search) * 30} секунд", messages.SUCCESS)
+            self.message_user(request, f"Процесс начался, примерное время ожидания - {(len(search)* len(search_part_numbers) * 30)/60} минут", messages.SUCCESS)
         except Exception as e:
             self.message_user(request, f"Ошибка: {e}", messages.ERROR)
 

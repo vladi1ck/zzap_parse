@@ -1,0 +1,33 @@
+{% extends "admin/change_form.html" %}
+
+{% block content %}
+    {{ block.super }}
+
+    <h2>Данные по продажам для артикула: {{ related_records.0.part_number }}</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Дата</th>
+                <th>Количество</th>
+                <th>Разница</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in related_records %}
+                <tr>
+                    <td>{{ record.created_at|date:"d F Y H:i" }}</td>
+                    <td>{{ record.count }}</td>
+                    <td>{{ record.difference }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if total_negative_difference %}
+        <h3>Сумма проданного: {{ total_negative_difference }}</h3>
+    {% else %}
+        <h3>Нет отрицательных разниц</h3>
+    {% endif %}
+
+{% endblock %}

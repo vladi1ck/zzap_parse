@@ -1,0 +1,26 @@
+{% extends "admin/change_list.html" %}
+{% block content %}
+<h2>Сводная таблица по артикулам</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Артикул</th>
+            <th>Дата</th>
+            <th>Количество</th>
+            <th>Разница</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for part_number, records in summary_data.items %}
+            {% for record in records %}
+                <tr>
+                    <td>{{ part_number }}</td>
+                    <td>{{ record.date }}</td>
+                    <td>{{ record.count }}</td>
+                    <td>{{ record.previous_count }}</td>
+                </tr>
+            {% endfor %}
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -44,7 +44,7 @@ class PartNumbersCount(models.Model):
     class Meta:
         verbose_name = 'Результат Поиска Запчасти (количество)'
         verbose_name_plural = 'Результаты Поиска Запчасти (количество)'
-        ordering = ['id']
+        ordering = ['-id']
 
     def __str__(self):
         return f"{self.part_number} ({self.brand_id.brand_car}) - {self.count}"
