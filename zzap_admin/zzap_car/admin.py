@@ -5,7 +5,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.shortcuts import redirect
 from zzap_car.tasks import search_part_numbers_process
 from zzap_car.models import BrandCar, ModelCar, Car
-from zzap_car.utils import fetch_car_brands
+from zzap_car.utils import fetch_car_brands, timeout_suggest, timeout_result
 from django.urls import path
 from django.core.serializers import serialize
 
@@ -27,7 +27,7 @@ class BrandCarAdmin(admin.ModelAdmin):
         try:
             brand_data = list(queryset.values('brand_id', 'brand_car'))
             search_part_numbers_process.delay(json.dumps(brand_data, cls=DjangoJSONEncoder))
-            self.message_user(request, f"Процесс начался, примерное время ожидания - {(len(search)* len(search_part_numbers) * 30)/60} минут", messages.SUCCESS)
+            self.message_user(request, f"Процесс начался, примерное время ожидания - {((len(search) * timeout_suggest) + (50 * timeout_result))/60} минут", messages.SUCCESS)
         except Exception as e:
             self.message_user(request, f"Ошибка: {e}", messages.ERROR)
 

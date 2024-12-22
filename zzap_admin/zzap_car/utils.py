@@ -10,11 +10,14 @@ from zzap_core.models import PartNumbersSearchResults, Search, PartNumbersCount
 
 dotenv.load_dotenv()
 
-API_KEY = os.getenv('api_key')
+API_KEY = os.getenv('api_key2')
 MAIN_URL = os.getenv('MAIN_URL')
 GET_BRANDS = os.getenv('GET_BRANDS')
 GET_SUGGEST = os.getenv('GET_SUGGEST')
 GET_RESULTS = os.getenv('GET_RESULTS')
+GET_RESULTS_LIGHT = os.getenv('GET_RESULTS_LIGHT')
+timeout_result = 6
+timeout_suggest = 25
 
 payload = {
     'login': '',
@@ -82,13 +85,13 @@ def fetch_part_numbers_by_brands(brand_id, brand_name):
                         )
 
                         count +=1
-                    time.sleep(30)
+                    time.sleep(timeout_result)
                     fetch_parts_count_by_part_numbers(brand_name, part_number['partnumber'], search.id, row_count)
                 print(count)
 
             else:
                 raise Exception(f"Ошибка запроса: {response.status_code}")
-            time.sleep(30)
+            time.sleep(timeout_suggest)
     except Exception as _ex:
         logging.debug(_ex)
     finally:
@@ -96,17 +99,18 @@ def fetch_part_numbers_by_brands(brand_id, brand_name):
 
 def fetch_parts_count_by_part_numbers(brand_name, part_number, search_id, row_count):
     """Отправка запроса и сохранение артикулов запчастей автомобилей"""
-    global count_part
-    url = f'{MAIN_URL}/{GET_RESULTS}'
+    global count_part, timeout_result
+    url = f'{MAIN_URL}/{GET_RESULTS_LIGHT}'
     try:
 
-        # payload['search_text'] = f'{search.search_string} {brand_name}'
         payload['row_count'] = 1000
         payload['search_text'] = ''
         payload['type_request'] = 4
         payload['class_man'] = brand_name
         payload['partnumber'] = part_number
         payload['code_region'] = 1
+        if count_part == 0:
+            time.sleep(timeout_result)
         response = requests.post(url, payload)
 
         if response.status_code == 200:
@@ -114,7 +118,9 @@ def fetch_parts_count_by_part_numbers(brand_name, part_number, search_id, row_co
             error = part_numbers_json['error']
             if error:
                 logging.debug(f'Error: {error}')
+                timeout_result +=1
             try:
+                print(part_numbers_json['error'])
                 PartNumbersCount.objects.create(
                     brand_id=BrandCar.objects.get(brand_id=part_numbers_json['code_man']),
                     search_id=Search.objects.get(id=search_id),
