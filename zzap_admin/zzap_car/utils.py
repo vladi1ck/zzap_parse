@@ -116,9 +116,9 @@ def fetch_parts_count_by_part_numbers(brand_name, part_number, search_id, row_co
         if response.status_code == 200:
             part_numbers_json = from_xml_to_json(response.text)
             error = part_numbers_json['error']
-            if error:
+            if error != '':
                 logging.debug(f'Error: {error}')
-                timeout_result +=1
+                time.sleep(25)
             try:
                 print(part_numbers_json['error'])
                 PartNumbersCount.objects.create(
