@@ -5,8 +5,11 @@ import time
 import xml.etree.ElementTree as ET
 import dotenv
 import requests
+from django.contrib import messages
+from django.core.cache import cache
+
 from zzap_car.models import BrandCar
-from zzap_core.models import PartNumbersSearchResults, Search, PartNumbersCount
+from zzap_core.models import PartNumbersSearchResults, Search, PartNumbersCount, Timeouts
 
 dotenv.load_dotenv()
 
@@ -16,8 +19,7 @@ GET_BRANDS = os.getenv('GET_BRANDS')
 GET_SUGGEST = os.getenv('GET_SUGGEST')
 GET_RESULTS = os.getenv('GET_RESULTS')
 GET_RESULTS_LIGHT = os.getenv('GET_RESULTS_LIGHT')
-timeout_result = 6
-timeout_suggest = 25
+
 
 payload = {
     'login': '',
@@ -51,12 +53,21 @@ def fetch_car_brands():
     else:
         raise Exception(f"Ошибка запроса: {response.status_code}")
 
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+
 def fetch_part_numbers_by_brands(brand_id, brand_name):
     """Отправка запроса и сохранение артикулов запчастей автомобилей"""
     global count_part
     url = f'{MAIN_URL}/{GET_SUGGEST}'
     search_data = Search.objects.all()
+    timeout = Timeouts.objects.last()
+    timeout_result = timeout.timeout_result
+    timeout_suggest = timeout.timeout_suggest
     count = 0
+
     try:
         for search in search_data:
             print(search.search_string)
@@ -68,15 +79,18 @@ def fetch_part_numbers_by_brands(brand_id, brand_name):
             if response.status_code == 200:
                 part_numbers_json = from_xml_to_json(response.text)
                 row_count = part_numbers_json['row_count']
+                print(part_numbers_json['table'])
 
                 for part_number in part_numbers_json['table']:
+                    if part_number['partnumber'] is None:
+                        break
                     if not PartNumbersSearchResults.objects.filter(
-                            brand_id=BrandCar.objects.get(brand_id=part_number['code_man']),
+                            brand_id=BrandCar.objects.get(brand_id=brand_id),
                             search_id=Search.objects.get(id=search.id),
                             part_number=part_number['partnumber']
                     ).exists():
                         PartNumbersSearchResults.objects.get_or_create(
-                            brand_id=BrandCar.objects.get(brand_id=part_number['code_man']),
+                            brand_id=BrandCar.objects.get(brand_id=brand_id),
                             part_number=part_number['partnumber'],
                             defaults={
                                 'search_id' : Search.objects.get(id=search.id),
@@ -86,7 +100,7 @@ def fetch_part_numbers_by_brands(brand_id, brand_name):
 
                         count +=1
                     time.sleep(timeout_result)
-                    fetch_parts_count_by_part_numbers(brand_name, part_number['partnumber'], search.id, row_count)
+                    fetch_parts_count_by_part_numbers(brand_id, brand_name, part_number['partnumber'], search.id, row_count)
                 print(count)
 
             else:
@@ -97,9 +111,12 @@ def fetch_part_numbers_by_brands(brand_id, brand_name):
     finally:
         count_part = 0
 
-def fetch_parts_count_by_part_numbers(brand_name, part_number, search_id, row_count):
+def fetch_parts_count_by_part_numbers(brand_id ,brand_name, part_number, search_id, row_count):
     """Отправка запроса и сохранение артикулов запчастей автомобилей"""
-    global count_part, timeout_result
+    global count_part
+    timeout = Timeouts.objects.last()
+    timeout_result = timeout.timeout_result
+    timeout_suggest = timeout.timeout_suggest
     url = f'{MAIN_URL}/{GET_RESULTS_LIGHT}'
     try:
 
@@ -118,11 +135,11 @@ def fetch_parts_count_by_part_numbers(brand_name, part_number, search_id, row_co
             error = part_numbers_json['error']
             if error != '':
                 logging.debug(f'Error: {error}')
-                time.sleep(25)
+                time.sleep(timeout_suggest)
             try:
                 print(part_numbers_json['error'])
                 PartNumbersCount.objects.create(
-                    brand_id=BrandCar.objects.get(brand_id=part_numbers_json['code_man']),
+                    brand_id=BrandCar.objects.get(brand_id=brand_id),
                     search_id=Search.objects.get(id=search_id),
                     part_number=part_numbers_json['partnumber'],
                     count=part_numbers_json['price_count_instock'],

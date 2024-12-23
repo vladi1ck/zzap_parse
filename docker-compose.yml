@@ -90,6 +90,8 @@ services:
     depends_on:
       - celery
       - admin
+    environment:
+      - FLOWER_UNAUTHENTICATED_API=True
     env_file:
       - .env
     logging:

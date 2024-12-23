@@ -1,15 +1,16 @@
 import json
 
 from django.contrib import admin, messages
+from django.core.cache import cache
 from django.core.serializers.json import DjangoJSONEncoder
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from zzap_car.tasks import search_part_numbers_process
 from zzap_car.models import BrandCar, ModelCar, Car
-from zzap_car.utils import fetch_car_brands, timeout_suggest, timeout_result
+from zzap_car.utils import fetch_car_brands
 from django.urls import path
 from django.core.serializers import serialize
 
-from zzap_core.models import Search, PartNumbersSearchResults
+from zzap_core.models import Search, PartNumbersSearchResults, Timeouts
 
 
 @admin.register(BrandCar)
@@ -20,6 +21,9 @@ class BrandCarAdmin(admin.ModelAdmin):
     def search_by_brands(self, request, queryset=None):
         """Метод для обновления данных о брендах автомобилей."""
         search = Search.objects.all()
+        timeout = Timeouts.objects.last()
+        timeout_result = timeout.timeout_result
+        timeout_suggest = timeout.timeout_suggest
         search_part_numbers = PartNumbersSearchResults.objects.all()
         if queryset is None or len(queryset)>1:
             self.message_user(request, f"Ошибка: Выберите 1 марку", messages.ERROR)

@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.db.models import Sum, F, Subquery, OuterRef, IntegerField, ExpressionWrapper
 from datetime import datetime, timedelta
 
-from zzap_core.models import Search, PartNumbersSearchResults, PartNumbersCount
+from zzap_core.models import Search, PartNumbersSearchResults, PartNumbersCount, Timeouts
 
 
 @admin.register(Search)
@@ -13,6 +13,11 @@ class SearchAdmin(admin.ModelAdmin):
 @admin.register(PartNumbersSearchResults)
 class SearchResultsAdmin(admin.ModelAdmin):
     list_display = ('part_number', 'search_id', 'brand_id', )
+
+
+@admin.register(Timeouts)
+class TimeoutsAdmin(admin.ModelAdmin):
+    list_display = ('timeout_result', 'timeout_suggest', )
 
 
 @admin.register(PartNumbersCount)

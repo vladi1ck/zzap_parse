@@ -42,9 +42,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'zzap_car.apps.ZzapCarConfig',
     'zzap_core.apps.ZzapCoreConfig',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
+    # 'zzap_car.middleware.AdminNotificationMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -76,6 +78,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'zzap_admin.wsgi.application'
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://redis:6379/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+    }
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases

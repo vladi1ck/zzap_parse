@@ -48,3 +48,7 @@ class PartNumbersCount(models.Model):
 
     def __str__(self):
         return f"{self.part_number} ({self.brand_id.brand_car}) - {self.count}"
+
+class Timeouts(models.Model):
+    timeout_result = models.IntegerField(default=6)
+    timeout_suggest = models.IntegerField(default=30)
