@@ -5,9 +5,6 @@ import time
 import xml.etree.ElementTree as ET
 import dotenv
 import requests
-from django.contrib import messages
-from django.core.cache import cache
-
 from zzap_car.models import BrandCar
 from zzap_core.models import PartNumbersSearchResults, Search, PartNumbersCount, Timeouts
 
@@ -100,12 +97,14 @@ def fetch_part_numbers_by_brands(brand_id, brand_name):
 
                         count +=1
                     time.sleep(timeout_result)
-                    fetch_parts_count_by_part_numbers(brand_id, brand_name, part_number['partnumber'], search.id, row_count)
+                    progress = fetch_parts_count_by_part_numbers(brand_id, brand_name, part_number['partnumber'], search.id, row_count)
                 print(count)
+
 
             else:
                 raise Exception(f"Ошибка запроса: {response.status_code}")
             time.sleep(timeout_suggest)
+            return progress
     except Exception as _ex:
         logging.debug(_ex)
     finally:
@@ -132,20 +131,22 @@ def fetch_parts_count_by_part_numbers(brand_id ,brand_name, part_number, search_
 
         if response.status_code == 200:
             part_numbers_json = from_xml_to_json(response.text)
-            error = part_numbers_json['error']
-            if error != '':
-                logging.debug(f'Error: {error}')
-                time.sleep(timeout_suggest)
+            error = '[100]: Превышена максимальная частота запросов..'
             try:
-                print(part_numbers_json['error'])
-                PartNumbersCount.objects.create(
-                    brand_id=BrandCar.objects.get(brand_id=brand_id),
-                    search_id=Search.objects.get(id=search_id),
-                    part_number=part_numbers_json['partnumber'],
-                    count=part_numbers_json['price_count_instock'],
-                )
-                count_part +=1
-                print(f'{count_part}/{row_count}')
+                if error in part_numbers_json['error']:
+                    time.sleep(timeout_result+3)
+                    print(part_numbers_json['error'])
+                else:
+                    PartNumbersCount.objects.create(
+                        brand_id=BrandCar.objects.get(brand_id=brand_id),
+                        search_id=Search.objects.get(id=search_id),
+                        part_number=part_numbers_json['partnumber'],
+                        count=part_numbers_json['price_count_instock'],
+                    )
+                    count_part +=1
+                    progress_message = f'{count_part}/{row_count}'
+                    print(progress_message)  # Для логов
+                    return progress_message
             except Exception as _ex:
                 print(_ex)
         else:

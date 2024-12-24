@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.db.models import Sum, F, Subquery, OuterRef, IntegerField, ExpressionWrapper
 from datetime import datetime, timedelta
 
@@ -12,7 +12,7 @@ class SearchAdmin(admin.ModelAdmin):
 
 @admin.register(PartNumbersSearchResults)
 class SearchResultsAdmin(admin.ModelAdmin):
-    list_display = ('part_number', 'search_id', 'brand_id', )
+    list_display = ('part_number', 'search_id', 'brand_car', )
 
 
 @admin.register(Timeouts)
@@ -22,8 +22,9 @@ class TimeoutsAdmin(admin.ModelAdmin):
 
 @admin.register(PartNumbersCount)
 class PartNumbersCountAdmin(admin.ModelAdmin):
-    list_display = ('part_number', 'search_id', 'brand_id', 'count', 'created_at', 'difference')
-    list_filter = ('part_number', 'search_id__search_string', 'brand_id')
+    list_display = ('part_number', 'search_id', 'brand_car', 'count', 'created_at', 'difference')
+    list_filter = ('part_number', 'search_id__search_string', 'brand_car')
+
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)

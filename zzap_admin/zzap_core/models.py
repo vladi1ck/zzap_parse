@@ -16,7 +16,7 @@ class Search(models.Model):
         return self.search_string
 
 class PartNumbersSearchResults(models.Model):
-    brand_id = models.ForeignKey(BrandCar, to_field='brand_id', on_delete=models.PROTECT)
+    brand_car = models.ForeignKey(BrandCar, to_field='brand_car', on_delete=models.CASCADE)
     search_id = models.ForeignKey(Search, on_delete=models.CASCADE)
     part_number = models.CharField(max_length=255, null=False, blank=False)
     class_cat = models.CharField(max_length=255, null=False, blank=False)
@@ -27,15 +27,15 @@ class PartNumbersSearchResults(models.Model):
         verbose_name = 'Результат Поиска для Артикулов'
         verbose_name_plural = 'Результаты Поиска для Артикулов'
         constraints = [
-            models.UniqueConstraint(fields=['brand_id', 'part_number'], name='unique_part_per_brand')
+            models.UniqueConstraint(fields=['brand_car', 'part_number'], name='unique_part_per_brand')
         ]
         ordering = ['id']
 
     def __str__(self):
-        return f"{self.part_number} ({self.brand_id.brand_car})"
+        return f"{self.part_number} ({self.brand_car})"
 
 class PartNumbersCount(models.Model):
-    brand_id = models.ForeignKey(BrandCar, to_field='brand_id', on_delete=models.PROTECT)
+    brand_car = models.ForeignKey(BrandCar, to_field='brand_car', on_delete=models.PROTECT)
     search_id = models.ForeignKey(Search, on_delete=models.CASCADE)
     part_number = models.CharField(max_length=255, null=False, blank=False)
     count = models.IntegerField(default=0)
@@ -47,7 +47,7 @@ class PartNumbersCount(models.Model):
         ordering = ['-id']
 
     def __str__(self):
-        return f"{self.part_number} ({self.brand_id.brand_car}) - {self.count}"
+        return f"{self.part_number} ({self.brand_car}) - {self.count}"
 
 class Timeouts(models.Model):
     timeout_result = models.IntegerField(default=6)
