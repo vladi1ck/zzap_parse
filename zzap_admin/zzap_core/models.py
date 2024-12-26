@@ -5,7 +5,6 @@ import logging
 import requests
 
 from zzap_car.utils import from_xml_to_json
-from zzap_req import part_number
 
 API_KEY = os.getenv('api_key2')
 MAIN_URL = os.getenv('MAIN_URL')
