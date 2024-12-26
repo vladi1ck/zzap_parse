@@ -34,10 +34,6 @@ services:
     command: >
       bash -c "
       python manage.py collectstatic --noinput &&
-      python manage.py makemigrations &&
-      python manage.py showmigrations | grep '\[ \]' && 
-      python manage.py migrate || 
-      echo 'No migrations to apply.' && 
       python manage.py runserver 0.0.0.0:8888
       "
 

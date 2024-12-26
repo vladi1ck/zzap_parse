@@ -13,9 +13,9 @@ def create_initial_data(sender, **kwargs):
 
 
     if not Timeouts.objects.exists():
-        Timeouts.objects.create(timeout_result=6, timeout_suggest=30)
+        Timeouts.objects.create(timeout_result=4, timeout_suggest=30)
         print("Таймаут создан")
 
     if not Search.objects.exists():
-        Search.objects.create(search_string='система охлаждения')
+        Search.objects.create(search_string='')
         print("Поиск создан")

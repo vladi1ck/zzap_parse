@@ -4,7 +4,7 @@ from django.contrib import admin, messages
 from django.core.cache import cache
 from django.core.serializers.json import DjangoJSONEncoder
 from django.shortcuts import redirect, render
-from zzap_car.tasks import search_part_numbers_process, fetch_part_numbers_by_brands_process, \
+from zzap_car.tasks import  fetch_part_numbers_by_brands_process, \
     fetch_parts_count_by_part_numbers_process
 from zzap_car.models import BrandCar, ModelCar, Car
 from zzap_car.utils import fetch_car_brands
@@ -17,6 +17,8 @@ from zzap_core.models import Search, PartNumbersSearchResults, Timeouts
 @admin.register(BrandCar)
 class BrandCarAdmin(admin.ModelAdmin):
     list_display = ('brand_car', 'brand_id', )
+    search_fields = ['brand_car', ]
+
     actions = ['search_by_brands_only_parts', 'search_by_brands', 'search_by_brands_only_count']
 
     def search_by_brands(self, request, queryset=None):

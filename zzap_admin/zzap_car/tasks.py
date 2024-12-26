@@ -4,11 +4,10 @@ import os
 import time
 import requests
 from zzap_car.models import BrandCar
-from zzap_car.utils import fetch_part_numbers_by_brands, from_xml_to_json
+from zzap_car.utils import  from_xml_to_json
 from celery import shared_task
 
-from zzap_core.models import Search, Timeouts, PartNumbersSearchResults, PartNumbersCount
-
+from zzap_core.models import Search, Timeouts, PartNumbersSearchResults, PartNumbersCount, SinglePartNumbers
 
 API_KEY = os.getenv('api_key2')
 MAIN_URL = os.getenv('MAIN_URL')
@@ -38,7 +37,7 @@ def search_part_numbers_process(brand_json):
             brand_id = brand['brand_id']
             brand_name = brand['brand_car']
             try:
-                progress = fetch_part_numbers_by_brands(brand_id, brand_name)
+                progress = fetch_part_numbers_by_brands_process(brand_id, brand_name)
             except Exception as _ex:
                 print(_ex)
         return progress
@@ -70,6 +69,7 @@ def fetch_part_numbers_by_brands_process(brand_id, brand_name):
             part_numbers_json = from_xml_to_json(response.text)
             try:
                 print(part_numbers_json['terms'])
+                error = part_numbers_json['error']
                 row_count = part_numbers_json['row_count']
                 print(row_count)
                 for part_number in part_numbers_json['table']:
@@ -104,13 +104,21 @@ def fetch_part_numbers_by_brands_process(brand_id, brand_name):
 
 
 @shared_task
-def fetch_parts_count_by_part_numbers_process(brand_name, part_number, search_id):
+def fetch_parts_count_by_part_numbers_process(brand_name, part_number, search_id:None):
     """Отправка запроса и сохранение артикулов запчастей автомобилей"""
     global count_part
     timeout = Timeouts.objects.last()
     timeout_result = timeout.timeout_result
     timeout_suggest = timeout.timeout_suggest
     url = f'{MAIN_URL}/{GET_RESULTS_LIGHT}'
+    if PartNumbersSearchResults.objects.filter(part_number=part_number).exists():
+        name = PartNumbersSearchResults.objects.filter(part_number=part_number).last()
+        search_id = name.search_id.id
+    else:
+        name = SinglePartNumbers.objects.filter(part_number=part_number).last()
+    class_cat = name.class_cat
+    if search_id is None:
+        search_id = Search.objects.get(search_string='').id
     try:
 
         payload['row_count'] = 1000
@@ -127,6 +135,7 @@ def fetch_parts_count_by_part_numbers_process(brand_name, part_number, search_id
             PartNumbersCount.objects.create(
                 brand_car=BrandCar.objects.get(brand_car=brand_name),
                 search_id=Search.objects.get(id=search_id),
+                class_cat=class_cat,
                 part_number=part_numbers_json['partnumber'],
                 count=part_numbers_json['price_count_instock']
             )
@@ -140,5 +149,4 @@ def fetch_parts_count_by_part_numbers_process(brand_name, part_number, search_id
             time.sleep(timeout_result)
     except Exception as _ex:
         logging.debug(_ex)
-
 

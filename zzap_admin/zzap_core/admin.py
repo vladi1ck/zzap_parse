@@ -1,18 +1,54 @@
 from django.contrib import admin, messages
 from django.db.models import Sum, F, Subquery, OuterRef, IntegerField, ExpressionWrapper
-from datetime import datetime, timedelta
+from zzap_car.tasks import fetch_parts_count_by_part_numbers_process
 
-from zzap_core.models import Search, PartNumbersSearchResults, PartNumbersCount, Timeouts
+from zzap_core.models import Search, PartNumbersSearchResults, PartNumbersCount, Timeouts, SinglePartNumbers
 
 
 @admin.register(Search)
 class SearchAdmin(admin.ModelAdmin):
     list_display = ('search_string', 'search_time', )
 
+@admin.register(SinglePartNumbers)
+class SinglePartNumbersAdmin(admin.ModelAdmin):
+    fields = ('part_number',)
+    readonly_fields = ('brand_car', 'class_cat', 'created_at')
+    list_display = ('part_number', 'brand_car', 'class_cat', 'created_at')
+    search_fields = ('part_number', 'brand_car__brand_car', 'class_cat')
+    actions = ('search_by_part_number', )
+
+    def search_by_part_number(self, request, queryset=None):
+        """Метод для обновления данных о брендах автомобилей."""
+
+        if queryset is None or len(queryset)>1:
+            self.message_user(request, f"Ошибка: Выберите 1 артикул", messages.ERROR)
+            return
+        try:
+            brand_data = list(queryset.values('part_number', 'brand_car'))
+            brand_car = brand_data[0]['brand_car']
+            part_number = brand_data[0]['part_number']
+            fetch_parts_count_by_part_numbers_process.delay(brand_car, part_number, None)
+            self.message_user(request, f"Успешно!", messages.SUCCESS)
+        except Exception as e:
+            self.message_user(request, f"Ошибка: {e}", messages.ERROR)
+
+    search_by_part_number.short_description = "Искать по выбранному артикулу (light)"
+
+    def save_model(self, request, obj, form, change):
+        """Переопределяем сохранение модели в админке."""
+        if not change:
+            try:
+                obj.fetch_data_from_api()
+            except Exception as _ex:
+                self.message_user(request,
+                                  f"Ошибка: {_ex}",
+                                  messages.SUCCESS)
+        super().save_model(request, obj, form, change)
+
 
 @admin.register(PartNumbersSearchResults)
 class SearchResultsAdmin(admin.ModelAdmin):
-    list_display = ('part_number', 'search_id', 'brand_car', )
+    list_display = ('part_number', 'search_id', 'brand_car', 'class_cat',)
 
 
 @admin.register(Timeouts)
@@ -22,8 +58,8 @@ class TimeoutsAdmin(admin.ModelAdmin):
 
 @admin.register(PartNumbersCount)
 class PartNumbersCountAdmin(admin.ModelAdmin):
-    list_display = ('part_number', 'search_id', 'brand_car', 'count', 'created_at', 'difference')
-    list_filter = ('part_number', 'search_id__search_string', 'brand_car')
+    list_display = ('part_number', 'class_cat', 'search_id', 'brand_car', 'count', 'created_at', 'difference')
+    list_filter = ('brand_car', 'search_id__search_string', 'class_cat','part_number',)
 
 
     def get_queryset(self, request):
