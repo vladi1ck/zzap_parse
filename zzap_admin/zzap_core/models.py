@@ -5,6 +5,7 @@ import logging
 import requests
 
 from zzap_car.utils import from_xml_to_json
+from zzap_req import part_number
 
 API_KEY = os.getenv('api_key2')
 MAIN_URL = os.getenv('MAIN_URL')
@@ -99,7 +100,9 @@ class SinglePartNumbers(models.Model):
             payload['code_region'] = 1
 
             response = requests.post(url, payload)
+
             part_numbers_json = from_xml_to_json(response.text)
+            print(part_numbers_json)
             error = part_numbers_json['error']
             try:
                 for item in part_numbers_json['table']:
