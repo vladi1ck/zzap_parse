@@ -9,6 +9,10 @@ from zzap_core.models import Search, PartNumbersSearchResults, PartNumbersCount,
 class SearchAdmin(admin.ModelAdmin):
     list_display = ('search_string', 'search_time', )
 
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.exclude(search_string__isnull=True).exclude(search_string="")
+
 @admin.register(SinglePartNumbers)
 class SinglePartNumbersAdmin(admin.ModelAdmin):
     fields = ('part_number',)
@@ -18,7 +22,6 @@ class SinglePartNumbersAdmin(admin.ModelAdmin):
     actions = ('search_by_part_number', )
 
     def search_by_part_number(self, request, queryset=None):
-        """Метод для обновления данных о брендах автомобилей."""
 
         if queryset is None or len(queryset)>1:
             self.message_user(request, f"Ошибка: Выберите 1 артикул", messages.ERROR)

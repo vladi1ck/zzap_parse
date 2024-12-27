@@ -130,8 +130,9 @@ def fetch_parts_count_by_part_numbers_process(brand_name, part_number, search_id
 
         response = requests.post(url, payload)
         part_numbers_json = from_xml_to_json(response.text)
-        print(part_numbers_json)
+
         error = part_numbers_json['error']
+        print(part_numbers_json['error'])
         try:
             PartNumbersCount.objects.create(
                 brand_car=BrandCar.objects.get(brand_car=brand_name),
