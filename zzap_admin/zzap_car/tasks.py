@@ -52,7 +52,7 @@ def fetch_part_numbers_by_brands_process(brand_id, brand_name):
     """Отправка запроса и сохранение артикулов запчастей автомобилей"""
     global count_part
     url = f'{MAIN_URL}/{GET_SUGGEST}'
-    search_data = Search.objects.all()
+    search_data = Search.objects.exclude(search_string='').all()
     timeout = Timeouts.objects.last()
     timeout_result = timeout.timeout_result
     timeout_suggest = timeout.timeout_suggest
