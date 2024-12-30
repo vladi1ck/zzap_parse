@@ -134,6 +134,7 @@ def fetch_parts_count_by_part_numbers_process(brand_name, part_number, search_id
         error = part_numbers_json['error']
         print(part_numbers_json['error'])
         try:
+
             PartNumbersCount.objects.create(
                 brand_car=BrandCar.objects.get(brand_car=brand_name),
                 search_id=Search.objects.get(id=search_id),

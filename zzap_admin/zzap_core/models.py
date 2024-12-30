@@ -68,9 +68,16 @@ class PartNumbersCount(models.Model):
         return f"{self.part_number} ({self.brand_car}) - {self.count}"
 
 class Timeouts(models.Model):
-    timeout_result = models.IntegerField(default=6)
-    timeout_suggest = models.IntegerField(default=30)
+    timeout_result = models.IntegerField(default=6, verbose_name='Задержка для получения количества')
+    timeout_suggest = models.IntegerField(default=30, verbose_name='Задержка для получения Артикулов по бренду')
 
+    class Meta:
+        verbose_name = 'Задержка опроса'
+        verbose_name_plural = 'Задержки опроса'
+        ordering = ['-id']
+
+    def __str__(self):
+        return f"{self.timeout_result} ({self.timeout_suggest})"
 
 class SinglePartNumbers(models.Model):
     brand_car = models.ForeignKey(BrandCar, to_field='brand_car', on_delete=models.CASCADE, null=True, blank=True)
@@ -106,8 +113,16 @@ class SinglePartNumbers(models.Model):
             try:
                 for item in part_numbers_json['table']:
                     if item['partnumber'] == self.part_number:
-                        self.brand_car = BrandCar.objects.get(brand_car=item['class_man'])
+                        brand_ = BrandCar.objects.get_or_create(
+                            brand_car=item['class_man'],
+                            defaults={
+                                'brand_id': item['code_man'],
+                            }
+                        )
+                        print(brand_)
+                        self.brand_car = brand_[0]
                         self.class_cat = item['class_cat']
+                        break
             except Exception as _ex:
                 print(f"Ошибка запроса: {_ex}")
         except Exception as _ex:
